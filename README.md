@@ -35,7 +35,7 @@ Status detection on the client is polling-based, (every 40ms, though I'm plannin
 
 ### Coding style info
 
-**Function names:**
+**Function names:**<br/>
 Helper functions / methods: ``camelCase``<br/>
 Event functions (hooks, net, etc): ``PascalCase``
 
