@@ -1,7 +1,5 @@
 -- Client environment
 
--- TODO: Privacy mode (Only handle AFK and Timeout status?)
-
 -- Getting global aliases
 
 local PSI = PlayerStatusIcons
@@ -15,10 +13,8 @@ local flagRemove = PSI.flagRemove
 local flagSet = PSI.flagSet
 local flagGet = PSI.flagGet
 
--- Cycle variable to detect if there was user input
-local userinput = false
 -- Cointains the last servertime (CurTime()) the player was active
-local last_active = CurTime() -- 0 is the 'safe default' state, basically it will be ignored
+local last_active = CurTime() -- nil will be ignored
 
 -- Holds the current status of the player in the form of a bitfield
 local current_statusfield = StatusFlags.ACTIVE
@@ -50,7 +46,15 @@ local function sendStatus(ply_target) -- Send status update to server (if the ta
 
 end
 
-function isSpawnMenuOpen()
+local function updateLastActive()
+	last_active = CurTime()
+end
+
+local function isAFK()
+	return last_active and (CurTime() - last_active) > Convar.afk_timelimit[Enum.HANDLE]:GetFloat() * 60
+end
+
+local function isSpawnMenuOpen()
 	return IsValid(g_SpawnMenu) and g_SpawnMenu:IsVisible()
 end
 
@@ -59,7 +63,10 @@ local function isAltTabbed()
 end
 
 local function getCursorPosHash() -- Returns a little 'hash' of the current mouse position (used for detecting changes in mouse position)
-	return gui.MouseX() * gui.MouseY() + gui.MouseX() + gui.MouseY()
+	local x = gui.MouseX()
+	local y = gui.MouseY()
+	-- Cantor pairing
+	return (x + y) * (x + y + 1) / 2 + x
 end
 
 local function isTyping()
@@ -79,6 +86,7 @@ local gameui_visible_last = gui.IsGameUIVisible()
 local alttabbed_last = isAltTabbed()
 local cursorpos_last = getCursorPosHash()
 local eyeangles_last = EyeAngles()
+local is_afk_last = false
 
 -- Userinput detecting
 
@@ -103,13 +111,15 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 		current_statusfield = flagRemove(current_statusfield, StatusFlags.AFK) -- AFK
 		current_statusfield_last = current_statusfield
 		
+		updateLastActive()
+
 		-- TIMEOUT is detected serverside
 		
 		sendStatus()
 
 		-- Status detection
 
-		timer.Create("PlyStatusIcons_StatusDetection", 0.04, 0, function() -- 40 ms
+		timer.Create("PlyStatusIcons_StatusDetection", DETECTION_DELAY_FAST, 0, function() -- 40 ms
 
 			-- This could probably be made less copy-pasty, but it's easier to see what's happening this way imo
 
@@ -119,7 +129,7 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 
 				current_statusfield = flagSet(current_statusfield, StatusFlags.CURSOR, isVGUIVisible())
 				vgui_visible_last = isVGUIVisible()
-				userinput = true
+				updateLastActive()
 
 			end
 
@@ -129,7 +139,7 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 				
 				current_statusfield = flagSet(current_statusfield, StatusFlags.TYPING, isTyping())
 				typing_last = isTyping()
-				userinput = true
+				updateLastActive()
 
 			end
 
@@ -139,7 +149,7 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 
 				current_statusfield = flagSet(current_statusfield, StatusFlags.MAINMENU, gui.IsGameUIVisible())
 				gameui_visible_last = gui.IsGameUIVisible()
-				userinput = true
+				updateLastActive()
 
 			end
 
@@ -149,32 +159,42 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 
 				current_statusfield = flagSet(current_statusfield, StatusFlags.ALTTAB, isAltTabbed())
 				alttabbed_last = isAltTabbed()
-				userinput = true
+				updateLastActive()
 
-			end
-
-			-- Catching status change
-
-			if current_statusfield_last ~= current_statusfield then -- Then the status changed somewhere
-
-				if userinput then -- This is so that the AFK flag instantly disappears for the other clients
-					current_statusfield = flagRemove(current_statusfield, StatusFlags.AFK)
-				end
-
-				sendStatus()
-				current_statusfield_last = current_statusfield
 			end
 
 			-- Mouse movement detection
 
 			if cursorpos_last ~= getCursorPosHash() then
-				userinput = true
+				updateLastActive()
 				cursorpos_last = getCursorPosHash()
 			end
 
 			if eyeangles_last ~= EyeAngles() then
-				userinput = true
+				updateLastActive()
 				eyeangles_last = EyeAngles()
+			end
+
+			-- AFK
+
+			if is_afk_last ~= isAFK() then
+
+				current_statusfield = flagSet(current_statusfield, StatusFlags.AFK, isAFK())
+				is_afk_last = isAFK()
+
+			end
+
+			-- Mask status for privacy mode
+
+			if Convar.privacy_mode[Enum.HANDLE]:GetBool() then
+				current_statusfield = bit.band(current_statusfield, StatusFlags.AFK)
+			end
+
+			-- Catching status change
+
+			if current_statusfield_last ~= current_statusfield then -- Then the status changed somewhere
+				sendStatus()
+				current_statusfield_last = current_statusfield
 			end
 
 		end)
@@ -192,33 +212,18 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 		-- Input detection
 
 		hook.Add("KeyPress", "PlyStatusIcons_KeyPress", function()
-			userinput = true
-		end)
-
-		timer.Create("PlyStatusIcons_InputDetection", 1, 0, function()
-
-			-- One second has passed,
-			if userinput then -- Player is still here, nothing to do
-				userinput = false -- Reset, so that we can detect in next cycle
-				last_active = CurTime() -- Save last time the player was active
-			end
-
-			local is_afk = last_active ~= 0 and CurTime() - last_active > Convar.afk_timelimit[Enum.HANDLE]:GetFloat() * 60
-			current_statusfield = flagSet(current_statusfield, StatusFlags.AFK, is_afk)
-
+			updateLastActive()
 		end)
 
 	else
 
 		timer.Remove("PlyStatusIcons_StatusDetection")
-		hook.Remove("PreDrawTranslucentRenderables", "PlyStatusIcons_FixEyeAngles")
+		-- hook.Remove("PreDrawTranslucentRenderables", "PlyStatusIcons_FixEyeAngles")
 		hook.Remove("OnSpawnMenuOpen", "PlyStatusIcons_OnSpawnMenuOpen")
 		hook.Remove("OnSpawnMenuClose", "PlyStatusIcons_OnSpawnMenuClose")
 		hook.Remove("KeyPress", "PlyStatusIcons_KeyPress")
-		timer.Remove("PlyStatusIcons_InputDetection")
 
-		last_active = 0
-		userinput = true -- So that it gets updated when it's started
+		last_active = nil
 		current_statusfield = StatusFlags.ACTIVE
 
 	end
