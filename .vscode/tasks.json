@@ -1,0 +1,59 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "GLua Lint",
+            "type": "shell",
+            "command": "./glualint.exe --config glualint.json lua",
+            "problemMatcher": {
+                "owner": "glualint.exe",
+                "fileLocation": [
+                    "relative",
+                    "${workspaceFolder}"
+                ],
+                "pattern": {
+                    "regexp": "^(.+): \\[(Warning|Error)\\] line (\\d+), column (\\d+) - line (\\d+), column (\\d+): (.*)$",
+                    "file": 1,
+                    "severity": 2,
+                    "line": 3,
+                    "column": 4,
+                    "endLine": 5,
+                    "endColumn": 6,
+                    "message": 7
+                }
+            },
+            "presentation": {
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            }
+        },
+        {
+            "label": "Build GMA",
+            "type": "shell",
+            "command": "./build-addon.bat ${workspaceFolder} ${workspaceFolder}\\PSI.gma",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Deploy to Steam Workshop",
+            "type": "shell",
+            "command": "./deploy-addon.bat ${workspaceFolder}\\PSI.gma 2002082140 ${input:changes} main",
+            "dependsOn": "Build GMA",
+            "presentation": {
+                "panel": "new",
+                "showReuseMessage": false,
+            },
+        }
+    ],
+    "inputs": [
+        {
+            "id": "changes",
+            "type": "promptString",
+            "description": "What changed in this version?"
+        }
+    ]
+}
