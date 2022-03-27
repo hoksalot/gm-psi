@@ -1,0 +1,21 @@
+{
+	"title"		:	"Player Status Icons",
+	"type"		:	"ServerContent",
+	"tags"		:	[ "build" ],
+	"ignore"	:
+	[
+		"*.psd",
+		"*.vcproj",
+		"*.bat",
+		"*.svn*",
+		"*.jpg",
+		"*.png",
+		"*.exe",
+		"*.json",
+		"*.md",
+		"*.gma",
+		".gitignore",
+		".git/*",
+		".vscode/*"
+	]
+}
