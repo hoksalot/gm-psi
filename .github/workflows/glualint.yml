@@ -1,0 +1,30 @@
+name: GLua Linter
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'lua/**'
+  pull_request:
+    branches: [ main, dev ]
+    paths:
+      - 'lua/**'
+  workflow_dispatch:
+
+jobs:
+  run-linter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download latest GLuaFixer
+        run: |
+            TAG=$(curl -s https://api.github.com/repos/FPtje/GLuaFixer/releases/latest \
+            | grep "tag_name" \
+            | awk '{ print $2 }' \
+            | sed 's/,$//'       \
+            | sed 's/"//g' )     \
+            ; curl -L -o glualint.zip https://github.com/FPtje/GLuaFixer/releases/download/$TAG/glualint-$TAG-linux-stripped.zip
+      - name: Extract GLuaFixer
+        run: unzip glualint.zip
+      - name: Lint GLua
+        run: ./glualint --config glualint.json .
