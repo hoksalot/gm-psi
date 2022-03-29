@@ -3,8 +3,12 @@ name: GLua Linter
 on:
   push:
     branches: [ main, dev ]
+    paths:
+      - 'lua/**'
   pull_request:
     branches: [ main, dev ]
+    paths:
+      - 'lua/**'
   workflow_dispatch:
 
 jobs:
