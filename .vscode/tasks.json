@@ -4,15 +4,15 @@
         {
             "label": "GLua Lint",
             "type": "shell",
-            "command": "./glualint.exe --config glualint.json lua",
+            "command": "glualint --config glualint.json lua; echo 'Linting finished'",
             "problemMatcher": {
-                "owner": "glualint.exe",
+                "owner": "glualint",
                 "fileLocation": [
                     "relative",
                     "${workspaceFolder}"
                 ],
                 "pattern": {
-                    "regexp": "^(.+): \\[(Warning|Error)\\] line (\\d+), column (\\d+) - line (\\d+), column (\\d+): (.*)$",
+                    "regexp": "^(.+): \\[(Warning|Error)\\] line (\\d+), column (\\d+) - line (\\d+), column (\\d+): (.+)\\s*$",
                     "file": 1,
                     "severity": 2,
                     "line": 3,
@@ -23,6 +23,7 @@
                 }
             },
             "presentation": {
+                "reveal": "silent",
                 "panel": "dedicated",
                 "showReuseMessage": false,
                 "clear": true
