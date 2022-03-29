@@ -17,7 +17,7 @@
     "lint_profanity": true,
     "lint_unusedVars": true,
     "lint_unusedParameters": false,
-    "lint_unusedLoopVars": false,
+    "lint_unusedLoopVars": true,
     "lint_inconsistentVariableStyle": false,
     "lint_ignoreFiles": [],
 
