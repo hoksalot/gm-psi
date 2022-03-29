@@ -38,7 +38,7 @@ local function sendStatus(ply_target) -- Send status update to server (if the ta
 			local write_target = ply_target and ply_target:IsPlayer()
 			net.WriteBool(write_target)
 			if write_target then
-				net.WriteEntity(ply_target) 
+				net.WriteEntity(ply_target)
 			end
 		net.SendToServer()
 
@@ -74,7 +74,7 @@ local function isTyping()
 end
 
 local function isVGUIVisible() -- In case I might add some exceptions for this flag
-	return vgui.CursorVisible() 
+	return vgui.CursorVisible()
 end
 
 -- Setting up vars for think
@@ -95,11 +95,11 @@ local currently_active -- A safeguard for double calling the toggle function
 local function ToggleHandle(active) -- Activates / deactivates this script
 
 	active = active and Convar.sv_enabled:GetBool()
-	
+
 	if currently_active == active then return end
 	currently_active = active
-	
-	if active then 
+
+	if active then
 
 		-- Sending status in the moment of activation
 
@@ -110,11 +110,11 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 		current_statusfield = flagSet(current_statusfield, StatusFlags.ALTTAB, isAltTabbed()) -- Alt tab
 		current_statusfield = flagRemove(current_statusfield, StatusFlags.AFK) -- AFK
 		current_statusfield_last = current_statusfield
-		
+
 		updateLastActive()
 
 		-- TIMEOUT is detected serverside
-		
+
 		sendStatus()
 
 		-- Status detection
@@ -136,7 +136,7 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 			-- Typing
 
 			if typing_last ~= isTyping() then
-				
+
 				current_statusfield = flagSet(current_statusfield, StatusFlags.TYPING, isTyping())
 				typing_last = isTyping()
 				updateLastActive()
@@ -145,7 +145,7 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 
 			-- Main menu
 
-			if gameui_visible_last ~= gui.IsGameUIVisible() then 
+			if gameui_visible_last ~= gui.IsGameUIVisible() then
 
 				current_statusfield = flagSet(current_statusfield, StatusFlags.MAINMENU, gui.IsGameUIVisible())
 				gameui_visible_last = gui.IsGameUIVisible()
@@ -155,7 +155,7 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 
 			-- Alt tabbed
 
-			if alttabbed_last ~= isAltTabbed() then 
+			if alttabbed_last ~= isAltTabbed() then
 
 				current_statusfield = flagSet(current_statusfield, StatusFlags.ALTTAB, isAltTabbed())
 				alttabbed_last = isAltTabbed()

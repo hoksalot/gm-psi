@@ -25,7 +25,17 @@ local render_scale = 0.05
 local icon_size = 115
 
 local timestamp_offset = 95
-local timestamp_font = surface.CreateFont("PSI_Timestamp", {font = "Coolvetica", size = 75, antialiasing = true, weight = 100})
+local timestamp_font = "PSI_Timestamp"
+
+surface.CreateFont(
+	timestamp_font,
+	{
+		font = "Coolvetica",
+		size = 75,
+		antialiasing = true,
+		weight = 100
+	}
+)
 
 -- Helper functions
 
@@ -36,7 +46,7 @@ local function mostSignificantFlag(x) -- (previousPowerOf2) Works until up to 2^
     x = bit.bor(x, bit.rshift(x, 4))
     x = bit.bor(x, bit.rshift(x, 8))
     x = bit.bor(x, bit.rshift(x, 16))
-    
+
     return x - bit.rshift(x, 1)
 
 end
@@ -54,9 +64,9 @@ end
 local function timeFormat(seconds) -- Returns nicely formatted time string for displaying
 
 	if seconds < 60 then
-		return string.format("%02d sec", seconds)	
+		return string.format("%02d sec", seconds)
 	elseif seconds < 3600 then
-		return string.format("%d min", seconds / 60)	
+		return string.format("%d min", seconds / 60)
 	else
 		local time = string.FormattedTime(seconds)
 		return string.format("%dh %02dm", time.h, time.m)
@@ -114,7 +124,7 @@ local function Render(bdepth, bskybox)
 	for ply, statusinfo in pairs(Statuses) do
 
 		-- Disconnect hook is not reliable
-		if not IsValid(ply) then 
+		if not IsValid(ply) then
 			Statuses[ply] = nil
 			goto next
 		end
@@ -172,10 +182,10 @@ local function Render(bdepth, bskybox)
 			-- Timestamp
 
 			local last_active = statusinfo.last_active
-			
+
 			if last_active then
 				local afk_seconds = CurTime() - last_active
-				draw.SimpleTextOutlined(timeFormat(afk_seconds), "PSI_Timestamp", 0, timestamp_offset, fade_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, fade_black)
+				draw.SimpleTextOutlined(timeFormat(afk_seconds), timestamp_font, 0, timestamp_offset, fade_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, fade_black)
 			end
 
 		cam.End3D2D()
@@ -191,7 +201,7 @@ local currently_active -- A safeguard for double calling the toggle function (bi
 local function ToggleHandle(active)
 
 	active = active and Convar.sv_enabled:GetBool() and Convar.cl_enabled:GetBool()
-	
+
 	if currently_active == active then return end
 	currently_active = active
 

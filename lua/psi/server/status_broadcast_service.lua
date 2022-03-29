@@ -8,9 +8,6 @@ local Enum = Convar.Enums
 
 local StatusFlags = PSI.StatusFlags
 
-local flagAdd = PSI.flagAdd
-local flagRemove = PSI.flagRemove
-local flagSet = PSI.flagSet
 local flagGet = PSI.flagGet
 
 -- Setting up networking
@@ -73,7 +70,7 @@ local function broadcastStatus(ply_source, new_statusfield, new_last_active, ply
 end
 
 local function requestStatusUpdate(ply) -- Requests a status update from ply. The status update is then forwarded to every other player
-	
+
 	if not isEnabled() then return end
 
 	net.Start("PlyStatusIcons_RequestStatusUpdate")
@@ -153,7 +150,7 @@ net.Receive("PlyStatusIcons_StatusUpdate", function(len, ply_source) -- The clie
 	broadcastStatus(ply_source, new_statusfield, new_last_active, ply_target)
 
 	-- A bit of support for server devs, you can use this to add a custom script to kick AFKs or whatever
-	hook.Run("PlyStatusIcons_Hook_StatusUpdate", ply_source, new_statusfield, new_last_active, ply_target) 
+	hook.Run("PlyStatusIcons_Hook_StatusUpdate", ply_source, new_statusfield, new_last_active, ply_target)
 	-- ent ply_source: player where the status update came from
 	-- unsigned int new_statusfield: the new status... (also check out helper functions for handling this (init file))
 	-- float new_last_active: the last time there was input from the player (curtime) only used when afk, otherwise 0
@@ -182,7 +179,7 @@ end)
 local currently_active -- A safeguard for double calling the toggle function
 
 local function toggleServerService(active) -- Toggles the detection and broadcasting of statusflags detected serverside (only serverside - status updates received from clients are independent)
-	
+
 	if currently_active == active then return end
 	currently_active = active
 
@@ -202,14 +199,14 @@ local function toggleServerService(active) -- Toggles the detection and broadcas
 			end
 
 		end)
-		
+
 		hook.Remove("PlayerInitialSpawn", "PlyStatusIcons_PlayerInitialSpawn")
 
 	else
 
 		timer.Remove("PlyStatusIcons_ServerSideStatusDetection")
 		timer.Remove("PlyStatusIcons_NetRateReset")
-		
+
 		hook.Add("PlayerInitialSpawn", "PlyStatusIcons_PlayerInitialSpawn", function() -- Player spawned in
 
 			if not isEnabled() then return end
@@ -231,7 +228,7 @@ end
 toggleServerService(false) -- Initialize server side
 
 cvars.AddChangeCallback(Convar.sv_enabled:GetName(), function(name, value_old, value_new)
-	
+
 	local enabled = tobool(value_new)
 	if tobool(value_old) == enabled then return end -- Pointless call
 

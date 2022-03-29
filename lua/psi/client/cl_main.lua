@@ -13,23 +13,18 @@ local flagSet = PSI.flagSet
 -- Creating clientside convars
 
 -- Enabled
-
-Convar.cl_enabled = Convar:new("Client enabled", nil, "cl_enabled", "1", FCVAR_ARCHIVE, "Toggle the rendering of icons for yourself")
+Convar.cl_enabled = Convar.new("Client enabled", nil, "cl_enabled", "1", FCVAR_ARCHIVE, "Toggle the rendering of icons for yourself")
 
 -- Privacy Mode
-
-Convar.privacy_mode = Convar:new("Privacy mode", nil, "privacy_mode", "0", FCVAR_ARCHIVE, "Only report AFK status to other players")
+Convar.privacy_mode = Convar.new("Privacy mode", nil, "privacy_mode", "0", FCVAR_ARCHIVE, "Only report AFK status to other players")
 
 -- Render Distance
-
-Convar.render_distance = Convar:new("Render distance", nil, "render_distance", "280", FCVAR_ARCHIVE, "Set the max rendering distance of icons (source units)", 100, 800)
+Convar.render_distance = Convar.new("Render distance", nil, "render_distance", "280", FCVAR_ARCHIVE, "Set the max rendering distance of icons (source units)", 100, 800)
 
 -- Height Offset
-
-Convar.height_offset = Convar:new("Height offset", nil, "height_offset", "15", FCVAR_ARCHIVE, "Set the overhead offset distance of icons (source units)", 15, 30)
+Convar.height_offset = Convar.new("Height offset", nil, "height_offset", "15", FCVAR_ARCHIVE, "Set the overhead offset distance of icons (source units)", 15, 30)
 
 -- Icon settings
-
 local iconsettings_generator = {
 	{"show_afk", "AFK", StatusFlags.AFK},
 	{"show_vgui", "In VGUI", StatusFlags.CURSOR},
@@ -49,13 +44,13 @@ for i, convar_data in ipairs(iconsettings_generator) do
 	local label = convar_data[2]
 	local statusflag = convar_data[3] -- Status flag associated with the setting
 
-	local function updateSettings(name, value_old, value_new) -- The callback to update the settings mask
+	local function updateSettings(_, value_old, value_new) -- The callback to update the settings mask
 		local enabled = tobool(value_new)
 		if tobool(value_old) == enabled then return end -- Pointless call
 		PSI.icon_settings_mask = flagSet(PSI.icon_settings_mask, statusflag, enabled)
 	end
 
-	local convar = Convar:new(label, updateSettings, name, "1", FCVAR_ARCHIVE, label)
+	local convar = Convar.new(label, updateSettings, name, "1", FCVAR_ARCHIVE, label)
 	convar[Enum.STATUSFLAG] = statusflag
 
 	PSI.icon_settings_mask = flagAdd(PSI.icon_settings_mask, convar:GetBool() and statusflag or 0) -- Initialize
@@ -146,7 +141,7 @@ net.Receive("PlyStatusIcons_NetworkReady", function() -- Get startup signal from
 
 	local human_count = #player.GetHumans()
 
-	if 1 < human_count then 
+	if 1 < human_count then
 		visualizationToggle(true)
 	end
 
@@ -154,12 +149,12 @@ end)
 
 -- Clientside convar toggle
 cvars.AddChangeCallback(Convar.cl_enabled:GetName(), function(name, value_old, value_new)
-	
+
 	local enabled = tobool(value_new)
 	if tobool(value_old) == enabled then return end -- Pointless call
 
 	local human_count = #player.GetHumans()
-	
+
 	if 1 < human_count then
 		visualizationToggle(enabled)
 	end
@@ -167,11 +162,11 @@ cvars.AddChangeCallback(Convar.cl_enabled:GetName(), function(name, value_old, v
 end, "PlyStatusIcons_VisualizationToggle")
 
 -- Serverside convar toggle
-cvars.AddChangeCallback(Convar.sv_enabled:GetName(), function(name, value_old, value_new) 
-	
+cvars.AddChangeCallback(Convar.sv_enabled:GetName(), function(name, value_old, value_new)
+
 	local enabled = tobool(value_new)
 	if tobool(value_old) == enabled then return end -- Pointless call
-	
+
 	detectionToggleHandle(enabled)
 
 	local human_count = #player.GetHumans()
