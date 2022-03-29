@@ -19,8 +19,8 @@ jobs:
             | awk '{ print $2 }' \
             | sed 's/,$//'       \
             | sed 's/"//g' )     \
-            ; curl -L -o glualint.zip https://github.com/FPtje/GLuaFixer/releases/download/$TAG/glualint-$TAG-linux.zip
+            ; curl -L -o glualint.zip https://github.com/FPtje/GLuaFixer/releases/download/$TAG/glualint-$TAG-linux-stripped.zip
       - name: Extract GLuaFixer
         run: unzip glualint.zip
-      - name: Run GLuaFixer
+      - name: Lint GLua
         run: ./glualint --config glualint.json .
