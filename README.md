@@ -1,7 +1,12 @@
 
 # Player Status Icons
 
-## Welcome!
+[![GLua Linter](https://github.com/hoksalot/gm-psi/actions/workflows/glualint.yml/badge.svg)](https://github.com/hoksalot/gm-psi/actions/workflows/glualint.yml)
+![Steam Views](https://img.shields.io/steam/views/2002082140?logo=steam)
+![Steam Subscribers](https://img.shields.io/endpoint.svg?url=https://shieldsio-steam-workshop.jross.me/2002082140/subscriptions&label=subscriptions)
+![Steam Update Date](https://img.shields.io/steam/update-date/2002082140?label=update%20date&logo=steam)
+
+## Welcome
 
 This is the official repository for the Garry's Mod addon Player Status Icons.
 A more detailed description can be found on the [Garry's Mod workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=2002082140) page of the addon.
