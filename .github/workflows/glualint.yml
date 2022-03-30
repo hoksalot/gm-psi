@@ -13,18 +13,16 @@ on:
 
 jobs:
   run-linter:
-    runs-on: ubuntu-20.04
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
       - name: Download latest GLuaFixer
         run: |
-            TAG=$(curl -s https://api.github.com/repos/FPtje/GLuaFixer/releases/latest \
-            | grep "tag_name" \
-            | awk '{ print $2 }' \
-            | sed 's/,$//'       \
-            | sed 's/"//g' )     \
-            ; curl -L -o glualint.zip https://github.com/FPtje/GLuaFixer/releases/download/$TAG/glualint-$TAG-linux-stripped.zip
+            $TAG=((Invoke-WebRequest https://api.github.com/repos/FPtje/GLuaFixer/releases/latest).Content | ConvertFrom-Json).tag_name;
+            Invoke-WebRequest "https://github.com/FPtje/GLuaFixer/releases/download/$TAG/glualint-$TAG-Windows.zip" -OutFile "glualint.zip"
+        shell: powershell
       - name: Extract GLuaFixer
-        run: unzip glualint.zip
+        run: Expand-Archive -Path "glualint.zip" -DestinationPath .
+        shell: powershell
       - name: Lint GLua
-        run: ./glualint --config glualint.json .
+        run: ./glualint.exe --config glualint.json .
