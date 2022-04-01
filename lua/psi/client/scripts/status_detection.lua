@@ -18,7 +18,10 @@ local last_active = CurTime() -- nil will be ignored
 
 -- Holds the current status of the player in the form of a bitfield
 local current_statusfield = StatusFlags.ACTIVE
-local current_statusfield_last = current_statusfield
+
+-- Constants
+local DETECTION_DELAY_FAST = 0.08 -- second delay
+local DETECTION_DELAY_SLOW = 1 -- second delay
 
 -- Helper functions
 
@@ -180,6 +183,11 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 			if is_afk_last ~= isAFK() then
 
 				current_statusfield = flagSet(current_statusfield, StatusFlags.AFK, isAFK())
+
+				-- Dynamic update rate
+				local delay = isAFK() and DETECTION_DELAY_SLOW or DETECTION_DELAY_FAST
+				timer.Adjust("PlyStatusIcons_StatusDetection", delay)
+
 				is_afk_last = isAFK()
 
 			end
