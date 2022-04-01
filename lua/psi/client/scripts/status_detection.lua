@@ -19,6 +19,10 @@ local last_active = CurTime() -- nil will be ignored
 -- Holds the current status of the player in the form of a bitfield
 local current_statusfield = StatusFlags.ACTIVE
 
+-- This is the masked status (due to privacy mode)
+local current_statusfield_masked = StatusFlags.ACTIVE
+local current_statusfield_masked_last = current_statusfield_masked
+
 -- Constants
 local DETECTION_DELAY_FAST = 0.08 -- second delay
 local DETECTION_DELAY_SLOW = 1 -- second delay
@@ -29,13 +33,9 @@ local function sendStatus(ply_target) -- Send status update to server (if the ta
 
 	if #player.GetHumans() > 1 then -- Otherwise there's no one to receive (and it would hit the rate limit eventually)
 
-		if Convar.privacy_mode:GetBool() then
-			current_statusfield = bit.band(current_statusfield, StatusFlags.AFK) -- Mask it to AFK only
-		end
-
 		net.Start("PlyStatusIcons_StatusUpdate")
-			net.WriteUInt(current_statusfield, PSI.Net.STATUS_LEN)
-			if flagGet(current_statusfield, StatusFlags.AFK) then
+			net.WriteUInt(current_statusfield_masked, PSI.Net.STATUS_LEN)
+			if flagGet(current_statusfield_masked, StatusFlags.AFK) then
 				net.WriteFloat(last_active)
 			end
 			local write_target = ply_target and ply_target:IsPlayer()
@@ -47,6 +47,13 @@ local function sendStatus(ply_target) -- Send status update to server (if the ta
 
 	end
 
+end
+
+local function updateMaskedStatusField()
+	current_statusfield_masked = current_statusfield
+	if Convar.privacy_mode[Enum.HANDLE]:GetBool() then
+		current_statusfield_masked = bit.band(current_statusfield, StatusFlags.AFK)
+	end
 end
 
 local function updateLastActive()
@@ -73,7 +80,7 @@ local function getCursorPosHash() -- Returns a little 'hash' of the current mous
 end
 
 local function isTyping()
-	return LocalPlayer():IsValid() and LocalPlayer().IsTyping and LocalPlayer():IsTyping()
+	return IsValid(LocalPlayer()) and LocalPlayer().IsTyping and LocalPlayer():IsTyping()
 end
 
 local function isVGUIVisible() -- In case I might add some exceptions for this flag
@@ -105,14 +112,14 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 	if active then
 
 		-- Sending status in the moment of activation
-
 		current_statusfield = flagSet(current_statusfield, StatusFlags.CURSOR, isVGUIVisible()) -- VGUI
 		current_statusfield = flagSet(current_statusfield, StatusFlags.TYPING, isTyping()) -- Typing
 		current_statusfield = flagSet(current_statusfield, StatusFlags.SPAWNMENU, isSpawnMenuOpen()) -- Spawn menu
 		current_statusfield = flagSet(current_statusfield, StatusFlags.MAINMENU, gui.IsGameUIVisible()) -- Main menu
 		current_statusfield = flagSet(current_statusfield, StatusFlags.ALTTAB, isAltTabbed()) -- Alt tab
 		current_statusfield = flagRemove(current_statusfield, StatusFlags.AFK) -- AFK
-		current_statusfield_last = current_statusfield
+		updateMaskedStatusField()
+		current_statusfield_masked_last = current_statusfield_masked
 
 		updateLastActive()
 
@@ -121,13 +128,11 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 		sendStatus()
 
 		-- Status detection
-
 		timer.Create("PlyStatusIcons_StatusDetection", DETECTION_DELAY_FAST, 0, function() -- 40 ms
 
 			-- This could probably be made less copy-pasty, but it's easier to see what's happening this way imo
 
 			-- VGUI
-
 			if vgui_visible_last ~= isVGUIVisible() then -- If changed then
 
 				current_statusfield = flagSet(current_statusfield, StatusFlags.CURSOR, isVGUIVisible())
@@ -137,7 +142,6 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 			end
 
 			-- Typing
-
 			if typing_last ~= isTyping() then
 
 				current_statusfield = flagSet(current_statusfield, StatusFlags.TYPING, isTyping())
@@ -147,7 +151,6 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 			end
 
 			-- Main menu
-
 			if gameui_visible_last ~= gui.IsGameUIVisible() then
 
 				current_statusfield = flagSet(current_statusfield, StatusFlags.MAINMENU, gui.IsGameUIVisible())
@@ -157,7 +160,6 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 			end
 
 			-- Alt tabbed
-
 			if alttabbed_last ~= isAltTabbed() then
 
 				current_statusfield = flagSet(current_statusfield, StatusFlags.ALTTAB, isAltTabbed())
@@ -167,7 +169,6 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 			end
 
 			-- Mouse movement detection
-
 			if cursorpos_last ~= getCursorPosHash() then
 				updateLastActive()
 				cursorpos_last = getCursorPosHash()
@@ -179,7 +180,6 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 			end
 
 			-- AFK
-
 			if is_afk_last ~= isAFK() then
 
 				current_statusfield = flagSet(current_statusfield, StatusFlags.AFK, isAFK())
@@ -193,22 +193,19 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 			end
 
 			-- Mask status for privacy mode
-
-			if Convar.privacy_mode[Enum.HANDLE]:GetBool() then
-				current_statusfield = bit.band(current_statusfield, StatusFlags.AFK)
-			end
+			updateMaskedStatusField()
 
 			-- Catching status change
-
-			if current_statusfield_last ~= current_statusfield then -- Then the status changed somewhere
+			if current_statusfield_masked_last ~= current_statusfield_masked then -- Then the status changed somewhere
 				sendStatus()
-				current_statusfield_last = current_statusfield
+				current_statusfield_masked_last = current_statusfield_masked
 			end
 
 		end)
 
 		hook.Add("PreDrawTranslucentRenderables", "PlyStatusIcons_FixEyeAngles", EyeAngles) -- This is to fix EyeAngles() inside Think
 
+		-- Last active is handled by the KeyPress hook for these
 		hook.Add("OnSpawnMenuOpen", "PlyStatusIcons_OnSpawnMenuOpen", function()
 			current_statusfield = flagAdd(current_statusfield, StatusFlags.SPAWNMENU)
 		end)
@@ -218,7 +215,6 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 		end)
 
 		-- Input detection
-
 		hook.Add("KeyPress", "PlyStatusIcons_KeyPress", function()
 			updateLastActive()
 		end)
