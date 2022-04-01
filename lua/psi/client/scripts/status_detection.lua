@@ -207,7 +207,7 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 
 		end)
 
-		-- hook.Add("PreDrawTranslucentRenderables", "PlyStatusIcons_FixEyeAngles", EyeAngles) -- This is to fix EyeAngles() inside Think
+		hook.Add("PreDrawTranslucentRenderables", "PlyStatusIcons_FixEyeAngles", EyeAngles) -- This is to fix EyeAngles() inside Think
 
 		hook.Add("OnSpawnMenuOpen", "PlyStatusIcons_OnSpawnMenuOpen", function()
 			current_statusfield = flagAdd(current_statusfield, StatusFlags.SPAWNMENU)
@@ -226,7 +226,7 @@ local function ToggleHandle(active) -- Activates / deactivates this script
 	else
 
 		timer.Remove("PlyStatusIcons_StatusDetection")
-		-- hook.Remove("PreDrawTranslucentRenderables", "PlyStatusIcons_FixEyeAngles")
+		hook.Remove("PreDrawTranslucentRenderables", "PlyStatusIcons_FixEyeAngles")
 		hook.Remove("OnSpawnMenuOpen", "PlyStatusIcons_OnSpawnMenuOpen")
 		hook.Remove("OnSpawnMenuClose", "PlyStatusIcons_OnSpawnMenuClose")
 		hook.Remove("KeyPress", "PlyStatusIcons_KeyPress")
