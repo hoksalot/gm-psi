@@ -69,6 +69,13 @@ local function broadcastStatus(ply_source, new_statusfield, new_last_active, ply
 		net.SendOmit(ply_source)
 	end
 
+	-- A bit of support for server devs, you can use this to add a custom script to kick AFKs or whatever
+	hook.Run("PlyStatusIcons_Hook_StatusUpdate", ply_source, new_statusfield, new_last_active, ply_target)
+	-- ent ply_source: player where the status update came from
+	-- unsigned int new_statusfield: the new status... (also check out helper functions for handling this (init file))
+	-- float new_last_active: the last time there was input from the player (curtime) only used when afk, otherwise 0
+	-- ent ply_target: only a player entity if there is a specific player to send the update to, otherwise it is sent to everyone
+
 end
 
 local function requestStatusUpdate(ply) -- Requests a status update from ply. The status update is then forwarded to every other player
@@ -144,13 +151,6 @@ local function receiveStatusUpdate(len, ply_source) -- The client is only expect
 	-- Sending update
 
 	broadcastStatus(ply_source, new_statusfield, new_last_active, ply_target)
-
-	-- A bit of support for server devs, you can use this to add a custom script to kick AFKs or whatever
-	hook.Run("PlyStatusIcons_Hook_StatusUpdate", ply_source, new_statusfield, new_last_active, ply_target)
-	-- ent ply_source: player where the status update came from
-	-- unsigned int new_statusfield: the new status... (also check out helper functions for handling this (init file))
-	-- float new_last_active: the last time there was input from the player (curtime) only used when afk, otherwise 0
-	-- ent ply_target: only a player entity if there is a specific player to send the update to, otherwise it is sent to everyone
 
 end
 
