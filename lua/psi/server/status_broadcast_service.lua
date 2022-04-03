@@ -56,7 +56,7 @@ local function broadcastStatus(ply_source, new_statusfield, new_last_active, ply
 	new_statusfield = new_statusfield or StatusFlags.ACTIVE
 
 	net.Start(Net.NETWORK_STRING)
-		net.WriteUInt(Net.SERVER_MESSAGE_TYPES.STATUS_UPDATE)
+		net.WriteUInt(Net.SERVER_MESSAGE_TYPES.STATUS_UPDATE, Net.SMT_LEN)
 		net.WriteEntity(ply_source)
 		net.WriteUInt(new_statusfield, PSI.Net.STATUS_LEN_SV)
 		if flagGet(new_statusfield, StatusFlags.AFK) then
