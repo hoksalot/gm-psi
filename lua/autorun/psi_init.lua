@@ -79,26 +79,23 @@ function Convar.new(label, change_callback, ...) -- Constructor - Safely (no dup
 end
 
 -- Networking constants
-Net.STATUS_LEN = 7 -- bits
-Net.RATE_LIMIT = 20 -- Number of updates a client can send over a given time window
-Net.RATE_WINDOW = 1 -- sec -- Period after which the rate counter resets for clients
 
 Net.NETWORK_STRING = "PlyStatusIcons_Network"
 
 -- 0 values are ambiguous in that they can also be the result of a read error,
 -- I also considered this while picking IDs for message types
 Net.CLIENT_MESSAGE_TYPES = { -- Messages sent by clients
-	NETWORK_READY = 0, -- The client signals it is ready to receive data (this is used once, and then ignored by the server)
+	FIRST_SPAWN = 0, -- The client signals it is ready to receive data (this is used once, and then ignored by the server)
 	STATUS_UPDATE = 1 -- The client sends a status update
 }
-Net.CMT_LEN = 1
+Net.CMT_LEN = 1 -- bits
 
 Net.SERVER_MESSAGE_TYPES { -- Messages sent by the server
 	STATUS_UPDATE_REQUEST = 0, -- If there is a read error, there is no harm done in the client sending a status update
 	STATUS_UPDATE = 1, -- The server forwards a status update
-	NETWORK_READY = 2 -- The server forwards the network ready signal
+	FIRST_SPAWN = 2 -- The server forwards the first spawn signal
 }
-Net.SMT_LEN = 2
+Net.SMT_LEN = 2 -- bits
 
 -- Status flags (enums), in hierarchical order
 PSI.StatusFlags = {
@@ -111,6 +108,8 @@ PSI.StatusFlags = {
 	ALTTAB = 32, -- Game not in focus
 	TIMEOUT = 64 -- The player is timing out, detected server side
 }
+Net.STATUS_LEN = 7 -- bits
+
 
 -- Global helper functions
 

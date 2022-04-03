@@ -75,8 +75,7 @@ local function timeFormat(seconds) -- Returns nicely formatted time string for d
 end
 
 -- Receiving updates
-
-net.Receive("PlyStatusIcons_StatusUpdate", function() -- Receiving status update
+local function receiveStatusUpdate() -- Receiving status update
 
 	-- Even if the script is disabled the client has to keep up with updates (to not break re-enabling)
 
@@ -113,7 +112,7 @@ net.Receive("PlyStatusIcons_StatusUpdate", function() -- Receiving status update
 
 	Statuses[ply_source].statusfield = new_statusfield
 
-end)
+end
 
 -- Rendering stuff
 
@@ -214,4 +213,4 @@ local function ToggleHandle(active)
 
 end
 
-return ToggleHandle
+return ToggleHandle, receiveStatusUpdate

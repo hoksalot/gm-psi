@@ -13,9 +13,9 @@ local flagGet = PSI.flagGet
 
 -- Setting up networking
 
-util.AddNetworkString("PlyStatusIcons_StatusUpdate") -- For receiving updates from clients and broadcasting them
-util.AddNetworkString("PlyStatusIcons_RequestStatusUpdate") -- For the server to request a status update from a specific client
-util.AddNetworkString("PlyStatusIcons_NetworkReady") -- For the clients to signal that they spawned in, and are ready for networking
+util.AddNetworkString(Net.NETWORK_STRING) -- For receiving updates from clients and broadcasting them
+Net.RATE_LIMIT = 20 -- Number of updates a client can send over a given time window
+Net.RATE_WINDOW = 1 -- sec -- Period after which the rate counter resets for clients
 
 -- Helper functions
 
@@ -43,7 +43,7 @@ local function initPlayerTable(ply) -- Opening a table on the player to store as
 	if ply and not ply.PSI then
 		ply.PSI = {}
 		ply.PSI.Status = {invisible = isInvisible(ply), timing_out = ply:IsTimingOut()}
-		ply.PSI.Net = {ready = false, rate = 0}
+		ply.PSI.Net = {first_spawn_set = false, rate = 0}
 	end
 end
 
@@ -130,16 +130,9 @@ local function NetRateReset() -- Call rate of this depends on network settings
 
 end
 
-net.Receive("PlyStatusIcons_StatusUpdate", function(len, ply_source) -- The client is only expected to send a status update when there is a CHANGE in the status or it is requested
-
-	-- Security measures
+local function receiveStatusUpdate(len, ply_source) -- The client is only expected to send a status update when there is a CHANGE in the status or it is requested
 
 	if not isEnabled() or not IsValid(ply_source) then return end
-
-	initPlayerTable(ply_source)
-	if ply_source.PSI.Net.rate >= PSI.Net.RATE_LIMIT then return end
-
-	ply_source.PSI.Net.rate = ply_source.PSI.Net.rate + 1 -- This resets after a given time window
 
 	-- Reading net
 
@@ -159,22 +152,38 @@ net.Receive("PlyStatusIcons_StatusUpdate", function(len, ply_source) -- The clie
 	-- float new_last_active: the last time there was input from the player (curtime) only used when afk, otherwise 0
 	-- ent ply_target: only a player entity if there is a specific player to send the update to, otherwise it is sent to everyone
 
-end)
+end
 
-net.Receive("PlyStatusIcons_NetworkReady", function(len, ply_source) -- Forward that the newly spawned in player is ready
+local function receiveFirstSpawn(len, ply_source) -- Forward that the newly spawned in player is ready
 
 	if not isEnabled() or not IsValid(ply_source) then return end
 
 	initPlayerTable(ply_source)
-	if ply_source.PSI.Net.ready then return end -- This is a security measure to protect other players from getting flooded
-	ply_source.PSI.Net.ready = true
+	if ply_source.PSI.Net.first_spawn_set then return end -- This is a security measure to protect other players from getting flooded
+	ply_source.PSI.Net.first_spawn_set = true
 
 	-- Forwarding
-
 	net.Start(Net.NETWORK_STRING)
-		net.WriteUInt(Net.SERVER_MESSAGE_TYPES.NETWORK_READY, Net.SMT_LEN)
+		net.WriteUInt(Net.SERVER_MESSAGE_TYPES.FIRST_SPAWN, Net.SMT_LEN)
 		net.WriteEntity(ply_source)
 	net.SendOmit(ply_source)
+
+end
+
+net.Receive(Net.NETWORK_STRING, function(len, ply_source)
+
+	-- Security measures
+	initPlayerTable(ply_source)
+	if ply_source.PSI.Net.rate >= PSI.Net.RATE_LIMIT then return end
+	ply_source.PSI.Net.rate = ply_source.PSI.Net.rate + 1 -- This resets after a given time window
+
+	local msg_type = net.ReadUInt(Net.CMT_LEN)
+
+	if msg_type == Net.CLIENT_MESSAGE_TYPES.FIRST_SPAWN then
+		receiveFirstSpawn(len, ply_source)
+	elseif msg_type == Net.CLIENT_MESSAGE_TYPES.STATUS_UPDATE then
+		receiveStatusUpdate(len, ply_source)
+	end
 
 end)
 
