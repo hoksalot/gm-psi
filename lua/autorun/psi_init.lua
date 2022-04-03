@@ -90,7 +90,7 @@ Net.CLIENT_MESSAGE_TYPES = { -- Messages sent by clients
 }
 Net.CMT_LEN = 1 -- bits
 
-Net.SERVER_MESSAGE_TYPES { -- Messages sent by the server
+Net.SERVER_MESSAGE_TYPES = { -- Messages sent by the server
 	STATUS_UPDATE_REQUEST = 0, -- If there is a read error, there is no harm done in the client sending a status update
 	STATUS_UPDATE = 1, -- The server forwards a status update
 	FIRST_SPAWN = 2 -- The server forwards the first spawn signal
