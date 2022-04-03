@@ -108,7 +108,8 @@ PSI.StatusFlags = {
 	ALTTAB = 32, -- Game not in focus
 	TIMEOUT = 64 -- The player is timing out, detected server side
 }
-Net.STATUS_LEN = 7 -- bits
+Net.STATUS_LEN_CL = 6 -- bits -- the TIMEOUT flag is only set by the server.
+Net.STATUS_LEN_SV = 7 -- bits
 
 
 -- Global helper functions

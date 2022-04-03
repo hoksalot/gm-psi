@@ -36,7 +36,7 @@ local function sendStatus(ply_target) -- Send status update to server (if the ta
 
 		net.Start(Net.NETWORK_STRING)
 			net.WriteUInt(Net.CLIENT_MESSAGE_TYPES.STATUS_UPDATE, Net.CMT_LEN)
-			net.WriteUInt(current_statusfield_masked, PSI.Net.STATUS_LEN)
+			net.WriteUInt(current_statusfield_masked, Net.STATUS_LEN_CL)
 			if flagGet(current_statusfield_masked, StatusFlags.AFK) then
 				net.WriteFloat(last_active)
 			end
