@@ -5,6 +5,7 @@
 local PSI = PlayerStatusIcons
 local Convar = PSI.Convar
 local Enum = Convar.Enums
+local Net = PSI.Net
 
 local StatusFlags = PSI.StatusFlags
 
@@ -33,7 +34,8 @@ local function sendStatus(ply_target) -- Send status update to server (if the ta
 
 	if #player.GetHumans() > 1 then -- Otherwise there's no one to receive (and it would hit the rate limit eventually)
 
-		net.Start("PlyStatusIcons_StatusUpdate")
+		net.Start(Net.NETWORK_STRING)
+			net.WriteUInt(Net.CLIENT_MESSAGE_TYPES.STATUS_UPDATE, Net.CMT_LEN)
 			net.WriteUInt(current_statusfield_masked, PSI.Net.STATUS_LEN)
 			if flagGet(current_statusfield_masked, StatusFlags.AFK) then
 				net.WriteFloat(last_active)

@@ -5,6 +5,8 @@
 local PSI = PlayerStatusIcons
 local Convar = PSI.Convar
 local Enum = Convar.Enums
+local Net = PSI.Net
+
 local StatusFlags = PSI.StatusFlags
 
 local flagAdd = PSI.flagAdd
@@ -127,7 +129,8 @@ hook.Add("InitPostEntity", "PlyStatusIcons_InitPostEntity", function() -- Send s
 			visualizationToggle(true)
 		end
 
-		net.Start("PlyStatusIcons_NetworkReady") -- In case this will be used for something server side too, it's better kept here
+		net.Start(Net.NETWORK_STRING) -- In case this will be used for something server side too, it's better kept here
+			net.WriteUInt(Net.CLIENT_MESSAGE_TYPES.NETWORK_READY, Net.CMT_LEN)
 		net.SendToServer()
 
 	end

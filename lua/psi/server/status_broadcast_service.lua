@@ -5,6 +5,7 @@
 local PSI = PlayerStatusIcons
 local Convar = PSI.Convar
 local Enum = Convar.Enums
+local Net = PSI.Net
 
 local StatusFlags = PSI.StatusFlags
 
@@ -54,7 +55,8 @@ local function broadcastStatus(ply_source, new_statusfield, new_last_active, ply
 
 	new_statusfield = new_statusfield or StatusFlags.ACTIVE
 
-	net.Start("PlyStatusIcons_StatusUpdate")
+	net.Start(Net.NETWORK_STRING)
+		net.WriteUInt(Net.SERVER_MESSAGE_TYPES.STATUS_UPDATE)
 		net.WriteEntity(ply_source)
 		net.WriteUInt(new_statusfield, PSI.Net.STATUS_LEN)
 		if flagGet(new_statusfield, StatusFlags.AFK) then
@@ -73,7 +75,8 @@ local function requestStatusUpdate(ply) -- Requests a status update from ply. Th
 
 	if not isEnabled() then return end
 
-	net.Start("PlyStatusIcons_RequestStatusUpdate")
+	net.Start(Net.NETWORK_STRING)
+		net.WriteUInt(Net.SERVER_MESSAGE_TYPES.STATUS_UPDATE_REQUEST, Net.SMT_LEN)
 	net.Send(ply)
 
 end
@@ -168,7 +171,8 @@ net.Receive("PlyStatusIcons_NetworkReady", function(len, ply_source) -- Forward 
 
 	-- Forwarding
 
-	net.Start("PlyStatusIcons_NetworkReady")
+	net.Start(Net.NETWORK_STRING)
+		net.WriteUInt(Net.SERVER_MESSAGE_TYPES.NETWORK_READY, Net.SMT_LEN)
 		net.WriteEntity(ply_source)
 	net.SendOmit(ply_source)
 
