@@ -79,10 +79,6 @@ include("scripts/ui.lua")
 local detectionToggleHandle, sendStatus = include("scripts/status_detection.lua")
 local visualizationToggleHandle, receiveStatusUpdate = include("scripts/status_visualization.lua")
 
-net.Receive("PlyStatusIcons_RequestStatusUpdate", function() -- Server required a status update
-	sendStatus()
-end)
-
 -- Service toggles
 
 gameevent.Listen("player_disconnect")
