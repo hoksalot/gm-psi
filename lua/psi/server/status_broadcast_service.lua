@@ -13,7 +13,7 @@ local flagGet = PSI.flagGet
 
 -- Setting up networking
 
-util.AddNetworkString(Net.NETWORK_STRING) -- For receiving updates from clients and broadcasting them
+util.AddNetworkString(Net.NETWORK_STRING) -- For communication between the client and the server
 Net.RATE_LIMIT = 20 -- Number of updates a client can send over a given time window
 Net.RATE_WINDOW = 1 -- sec -- Period after which the rate counter resets for clients
 
