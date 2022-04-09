@@ -81,9 +81,10 @@ local function receiveStatusUpdate() -- Receiving status update
 
 	local ply_source = net.ReadEntity()
 	local new_statusfield = net.ReadUInt(PSI.Net.STATUS_LEN_SV)
-	local new_last_active = flagGet(new_statusfield, StatusFlags.AFK) and net.ReadFloat()
+	local new_last_active = flagGet(new_statusfield, StatusFlags.AFK) and net.ReadDouble()
 
 	if not ply_source:IsPlayer() then return end -- Read fail
+	if new_last_active and new_last_active == 0 then return end
 
 	if new_statusfield == StatusFlags.ACTIVE then -- Pointless to store this, also less entries to loop through when rendering
 		Statuses[ply_source] = nil

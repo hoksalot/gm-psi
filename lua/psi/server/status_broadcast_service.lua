@@ -60,7 +60,7 @@ local function broadcastStatus(ply_source, new_statusfield, new_last_active, ply
 		net.WriteEntity(ply_source)
 		net.WriteUInt(new_statusfield, PSI.Net.STATUS_LEN_SV)
 		if flagGet(new_statusfield, StatusFlags.AFK) then
-			net.WriteFloat(new_last_active or 0)
+			net.WriteDouble(new_last_active or 0)
 		end
 
 	if ply_target and ply_target:IsPlayer() then
@@ -144,7 +144,7 @@ local function receiveStatusUpdate(len, ply_source) -- The client is only expect
 	-- Reading net
 
 	local new_statusfield = net.ReadUInt(Net.STATUS_LEN_CL)
-	local new_last_active = flagGet(new_statusfield, StatusFlags.AFK) and net.ReadFloat() or 0
+	local new_last_active = flagGet(new_statusfield, StatusFlags.AFK) and net.ReadDouble() or 0
 	local read_target = net.ReadBool()
 	local ply_target = read_target and net.ReadEntity() or NULL -- broadcastStatus will know if it's invalid
 
