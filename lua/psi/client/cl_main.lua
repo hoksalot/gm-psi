@@ -5,6 +5,8 @@
 local PSI = PlayerStatusIcons
 local Convar = PSI.Convar
 local Enum = Convar.Enums
+local Net = PSI.Net
+
 local StatusFlags = PSI.StatusFlags
 
 local flagAdd = PSI.flagAdd
@@ -75,11 +77,7 @@ include("scripts/ui.lua")
 
 -- These scripts return a function for toggling their active state
 local detectionToggleHandle, sendStatus = include("scripts/status_detection.lua")
-local visualizationToggleHandle = include("scripts/status_visualization.lua")
-
-net.Receive("PlyStatusIcons_RequestStatusUpdate", function() -- Server required a status update
-	sendStatus()
-end)
+local visualizationToggleHandle, receiveStatusUpdate = include("scripts/status_visualization.lua")
 
 -- Service toggles
 
@@ -125,16 +123,17 @@ hook.Add("InitPostEntity", "PlyStatusIcons_InitPostEntity", function() -- Send s
 
 		if 1 < human_count then
 			visualizationToggle(true)
-		end
 
-		net.Start("PlyStatusIcons_NetworkReady") -- In case this will be used for something server side too, it's better kept here
-		net.SendToServer()
+			net.Start(Net.NETWORK_STRING)
+				net.WriteUInt(Net.CLIENT_MESSAGE_TYPES.FIRST_SPAWN, Net.CMT_LEN)
+			net.SendToServer()
+		end
 
 	end
 
 end)
 
-net.Receive("PlyStatusIcons_NetworkReady", function() -- Get startup signal from others (never received if the server toggle is disabled, no need to check for that)
+local function receiveFirstSpawn() -- Get startup signal from others (never received if the server toggle is disabled, no need to check for that)
 
 	local ply_source = net.ReadEntity() -- The player who started up
 	sendStatus(ply_source) -- Send the current status to them (doesn't matter if the addon is disabled for them, they need to be up to date)
@@ -143,6 +142,21 @@ net.Receive("PlyStatusIcons_NetworkReady", function() -- Get startup signal from
 
 	if 1 < human_count then
 		visualizationToggle(true)
+	end
+
+end
+
+-- Handle different message types
+net.Receive(Net.NETWORK_STRING, function()
+
+	local msg_type = net.ReadUInt(Net.SMT_LEN)
+
+	if msg_type == Net.SERVER_MESSAGE_TYPES.STATUS_UPDATE_REQUEST then
+		sendStatus()
+	elseif msg_type == Net.SERVER_MESSAGE_TYPES.STATUS_UPDATE then
+		receiveStatusUpdate()
+	elseif msg_type == Net.SERVER_MESSAGE_TYPES.FIRST_SPAWN then
+		receiveFirstSpawn()
 	end
 
 end)

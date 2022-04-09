@@ -75,13 +75,12 @@ local function timeFormat(seconds) -- Returns nicely formatted time string for d
 end
 
 -- Receiving updates
-
-net.Receive("PlyStatusIcons_StatusUpdate", function() -- Receiving status update
+local function receiveStatusUpdate() -- Receiving status update
 
 	-- Even if the script is disabled the client has to keep up with updates (to not break re-enabling)
 
 	local ply_source = net.ReadEntity()
-	local new_statusfield = net.ReadUInt(PSI.Net.STATUS_LEN)
+	local new_statusfield = net.ReadUInt(PSI.Net.STATUS_LEN_SV)
 	local new_last_active = flagGet(new_statusfield, StatusFlags.AFK) and net.ReadFloat()
 
 	if not ply_source:IsPlayer() then return end -- Read fail
@@ -113,7 +112,7 @@ net.Receive("PlyStatusIcons_StatusUpdate", function() -- Receiving status update
 
 	Statuses[ply_source].statusfield = new_statusfield
 
-end)
+end
 
 -- Rendering stuff
 
@@ -159,6 +158,7 @@ local function Render(bdepth, bskybox)
 		if dist_alpha == 0 then goto next end -- Nothing to render
 
 		-- Colors
+		-- TODO: Avoid creating a new Color object every time
 		local fade_white = Color(255, 255, 255, dist_alpha)
 		local fade_black = Color(0, 0, 0, dist_alpha)
 
@@ -214,4 +214,4 @@ local function ToggleHandle(active)
 
 end
 
-return ToggleHandle
+return ToggleHandle, receiveStatusUpdate
