@@ -14,8 +14,8 @@ local flagRemove = PSI.flagRemove
 local flagSet = PSI.flagSet
 local flagGet = PSI.flagGet
 
--- Cointains the last servertime (CurTime()) the player was active
-local last_active = CurTime() -- nil will be ignored
+-- Cointains the last unix time the player was active
+local last_active = os.time() -- nil will be ignored
 
 -- Holds the current status of the player in the form of a bitfield
 local current_statusfield = StatusFlags.ACTIVE
@@ -38,7 +38,7 @@ local function sendStatus(ply_target) -- Send status update to server (if the ta
 			net.WriteUInt(Net.CLIENT_MESSAGE_TYPES.STATUS_UPDATE, Net.CMT_LEN)
 			net.WriteUInt(current_statusfield_masked, Net.STATUS_LEN_CL)
 			if flagGet(current_statusfield_masked, StatusFlags.AFK) then
-				net.WriteFloat(last_active)
+				net.WriteDouble(last_active)
 			end
 			local write_target = ply_target and ply_target:IsPlayer()
 			net.WriteBool(write_target)
@@ -59,11 +59,11 @@ local function updateMaskedStatusField()
 end
 
 local function updateLastActive()
-	last_active = CurTime()
+	last_active = os.time()
 end
 
 local function isAFK()
-	return last_active and (CurTime() - last_active) > Convar.afk_timelimit[Enum.HANDLE]:GetFloat() * 60
+	return last_active and (os.time() - last_active) > Convar.afk_timelimit[Enum.HANDLE]:GetFloat() * 60
 end
 
 local function isSpawnMenuOpen()
