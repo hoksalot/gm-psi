@@ -24,10 +24,13 @@ local render_scale = 0.05
 
 local icon_size = 115
 
+local icon_max_alpha = 200
 -- Colors used for rendering icon and text
 -- Alpha value changes dynamically
 local fade_white = Color(255, 255, 255)
 local fade_black = Color(0, 0, 0)
+
+local fade_dist_window = 80 -- Source units
 
 local timestamp_offset = 95
 local timestamp_font = "PSI_Timestamp"
@@ -154,9 +157,11 @@ local function Render(bdepth, bskybox)
 
 		-- Distance fading
 		local render_mindist = Convar.render_distance[Enum.HANDLE]:GetFloat()
-		local render_maxdist = render_mindist + 80
+		local render_maxdist = render_mindist + fade_dist_window
 
 		local dist = render_pos:Distance(EyePos())
+		local dist_clamped = math.Clamp(dist, render_mindist, render_maxdist) -- Needs to be clamped, otherwise math.Remap goes out of bounds
+		local dist_alpha = math.Remap(dist_clamped, render_mindist, render_maxdist, icon_max_alpha, 0)
 
 		if dist_alpha == 0 then goto next end -- Nothing to render
 
