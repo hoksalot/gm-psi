@@ -24,6 +24,11 @@ local render_scale = 0.05
 
 local icon_size = 115
 
+-- Colors used for rendering icon and text
+-- Alpha value changes dynamically
+local fade_white = Color(255, 255, 255)
+local fade_black = Color(0, 0, 0)
+
 local timestamp_offset = 95
 local timestamp_font = "PSI_Timestamp"
 
@@ -159,9 +164,8 @@ local function Render(bdepth, bskybox)
 		if dist_alpha == 0 then goto next end -- Nothing to render
 
 		-- Colors
-		-- TODO: Avoid creating a new Color object every time
-		local fade_white = Color(255, 255, 255, dist_alpha)
-		local fade_black = Color(0, 0, 0, dist_alpha)
+		fade_white.a = dist_alpha
+		fade_black.a = dist_alpha
 
 		-- Render ang
 		local render_ang = EyeAngles()
