@@ -143,8 +143,7 @@ local function Render(bdepth, bskybox)
 		local attachment_id = ply:LookupAttachment("anim_attachment_head") or 0 -- Can't take any chances with nils here
 		local attachment = ply:GetAttachment(attachment_id)
 
-		local base_pos = Vector()
-
+		local base_pos
 		if attachment and attachment.Pos then -- Would've been too ugly with a ternary
 			base_pos = attachment.Pos
 		else
