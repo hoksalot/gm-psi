@@ -171,8 +171,8 @@ local function Render(bdepth, bskybox)
 
 		-- Render ang
 		local render_ang = EyeAngles()
-		render_ang:RotateAroundAxis(render_ang:Right(),90)
-		render_ang:RotateAroundAxis(-render_ang:Up(),90)
+		render_ang:RotateAroundAxis(render_ang:Right(), 90)
+		render_ang:RotateAroundAxis(-render_ang:Up(), 90)
 
 		cam.Start3D2D(render_pos, render_ang, render_scale)
 
