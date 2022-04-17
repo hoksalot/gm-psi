@@ -129,6 +129,8 @@ local function Render(bdepth, bskybox)
 
 	if bskybox then return end -- Current call is drawing skybox, not good for us
 
+	local height_offset = Convar.height_offset[Enum.HANDLE]:GetFloat()
+
 	for ply, statusinfo in pairs(Statuses) do
 
 		-- Disconnect hook is not reliable
@@ -153,11 +155,7 @@ local function Render(bdepth, bskybox)
 			base_pos = (ply:LocalToWorld(ply:OBBCenter()) + ply:GetUp() * 24)
 		end
 
-		local render_pos = base_pos + ply:GetUp() * Convar.height_offset[Enum.HANDLE]:GetFloat()
-
-		-- Distance fading
-		local render_mindist = Convar.render_distance[Enum.HANDLE]:GetFloat()
-		local render_maxdist = render_mindist + fade_dist_window
+		local render_pos = base_pos + ply:GetUp() * height_offset
 
 		local dist = render_pos:Distance(EyePos())
 		local dist_clamped = math.Clamp(dist, render_mindist, render_maxdist) -- Needs to be clamped, otherwise math.Remap goes out of bounds
