@@ -156,9 +156,7 @@ local function Render(bdepth, bskybox)
 		local render_mindist = Convar.render_distance[Enum.HANDLE]:GetFloat()
 		local render_maxdist = render_mindist + 80
 
-		local dist = (render_pos-EyePos()):Length()
-		local dist_clamped = math.Clamp(dist, render_mindist, render_maxdist)
-		local dist_alpha = math.Remap(dist_clamped, render_mindist, render_maxdist, 200, 0)
+		local dist = render_pos:Distance(EyePos())
 
 		if dist_alpha == 0 then goto next end -- Nothing to render
 
