@@ -23,6 +23,7 @@ local Statuses = PSI.Statuses
 local render_scale = 0.05
 
 local icon_size = 115
+local icon_real_size = icon_size * render_scale
 
 local icon_max_alpha = 200
 -- Colors used for rendering icon and text
@@ -30,7 +31,10 @@ local icon_max_alpha = 200
 local fade_white = Color(255, 255, 255)
 local fade_black = Color(0, 0, 0)
 
-local fade_dist_window = 80 -- Source units
+-- How much of the view does the icon have to take up to appear fully visible
+local fading_ratio_max = 1.1 / 100
+-- The ratio at which the icon starts appearing
+local fading_ratio_min = fading_ratio_max * 0.7
 
 local timestamp_offset = 95
 local timestamp_font = "PSI_Timestamp"
@@ -129,6 +133,11 @@ local function Render(bdepth, bskybox)
 
 	if bskybox then return end -- Current call is drawing skybox, not good for us
 
+	-- https://developer.valvesoftware.com/wiki/Field_of_View
+	local object_scale = 1 / (2 * (math.tan(math.rad(LocalPlayer():GetFOV() / 2))))
+
+	local height_offset = Convar.height_offset[Enum.HANDLE]:GetFloat()
+
 	for ply, statusinfo in pairs(Statuses) do
 
 		-- Disconnect hook is not reliable
@@ -153,15 +162,13 @@ local function Render(bdepth, bskybox)
 			base_pos = (ply:LocalToWorld(ply:OBBCenter()) + ply:GetUp() * 24)
 		end
 
-		local render_pos = base_pos + ply:GetUp() * Convar.height_offset[Enum.HANDLE]:GetFloat()
+		local render_pos = base_pos + ply:GetUp() * height_offset
 
-		-- Distance fading
-		local render_mindist = Convar.render_distance[Enum.HANDLE]:GetFloat()
-		local render_maxdist = render_mindist + fade_dist_window
-
+		-- Fading
 		local dist = render_pos:Distance(EyePos())
-		local dist_clamped = math.Clamp(dist, render_mindist, render_maxdist) -- Needs to be clamped, otherwise math.Remap goes out of bounds
-		local dist_alpha = math.Remap(dist_clamped, render_mindist, render_maxdist, icon_max_alpha, 0)
+		local icon_view_ratio = object_scale * icon_real_size / dist
+		local icon_view_ratio_clamped = math.Clamp(icon_view_ratio, fading_ratio_min, fading_ratio_max)
+		local dist_alpha = math.Remap(icon_view_ratio_clamped, fading_ratio_min, fading_ratio_max, 0, icon_max_alpha)
 
 		if dist_alpha == 0 then goto next end -- Nothing to render
 

@@ -61,7 +61,6 @@ local function MakeSettingsMenu(panel)
 			checkbox:SetEnabled(active)
 		end
 
-		Convar.render_distance[Enum.PANEL]:SetEnabled(active)
 		Convar.height_offset[Enum.PANEL]:SetEnabled(active)
 
 	end
@@ -115,12 +114,6 @@ local function MakeSettingsMenu(panel)
 		end
 
 	end
-
-	-- Render distance
-
-	local slider_render_distance = panel:NumSlider(Convar.render_distance[Enum.LABEL], Convar.render_distance:GetName(), Convar.render_distance:GetMin(), Convar.render_distance:GetMax(), 0)
-	slider_render_distance:SetTooltip(Convar.render_distance:GetHelpText())
-	Convar.render_distance[Enum.PANEL] = slider_render_distance
 
 	-- Height offset
 

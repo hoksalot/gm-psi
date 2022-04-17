@@ -20,9 +20,6 @@ Convar.cl_enabled = Convar.new("Client enabled", nil, "cl_enabled", "1", FCVAR_A
 -- Privacy Mode
 Convar.privacy_mode = Convar.new("Privacy mode", nil, "privacy_mode", "0", FCVAR_ARCHIVE, "Only report AFK status to other players")
 
--- Render Distance
-Convar.render_distance = Convar.new("Render distance", nil, "render_distance", "280", FCVAR_ARCHIVE, "Set the max rendering distance of icons (source units)", 100, 800)
-
 -- Height Offset
 Convar.height_offset = Convar.new("Height offset", nil, "height_offset", "15", FCVAR_ARCHIVE, "Set the overhead offset distance of icons (source units)", 15, 30)
 
