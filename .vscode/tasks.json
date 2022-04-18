@@ -42,7 +42,13 @@
         {
             "label": "Deploy to Steam Workshop",
             "type": "shell",
-            "command": "./deploy-addon.bat ${workspaceFolder}\\PSI.gma 2002082140 ${input:changes} main",
+            "command": "./deploy-addon.bat",
+            "args": [
+                "${workspaceFolder}\\PSI.gma",
+                "2002082140",
+                "${input:changes}",
+                "main"
+            ],
             "dependsOn": "Build GMA",
             "presentation": {
                 "panel": "new",
