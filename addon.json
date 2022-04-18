@@ -4,6 +4,7 @@
 	"tags"		:	[ "build" ],
 	"ignore"	:
 	[
+		"LICENSE",
 		"*.psd",
 		"*.vcproj",
 		"*.bat",
