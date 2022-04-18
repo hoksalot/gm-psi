@@ -5,19 +5,17 @@
 local PSI = PlayerStatusIcons
 local Convar = PSI.Convar
 local Enum = Convar.Enums
+local Net = PSI.Net
 
 local StatusFlags = PSI.StatusFlags
 
-local flagAdd = PSI.flagAdd
-local flagRemove = PSI.flagRemove
-local flagSet = PSI.flagSet
 local flagGet = PSI.flagGet
 
 -- Setting up networking
 
-util.AddNetworkString("PlyStatusIcons_StatusUpdate") -- For receiving updates from clients and broadcasting them
-util.AddNetworkString("PlyStatusIcons_RequestStatusUpdate") -- For the server to request a status update from a specific client
-util.AddNetworkString("PlyStatusIcons_NetworkReady") -- For the clients to signal that they spawned in, and are ready for networking
+util.AddNetworkString(Net.NETWORK_STRING) -- For communication between the client and the server
+Net.RATE_LIMIT = 20 -- Number of updates a client can send over a given time window
+Net.RATE_WINDOW = 1 -- sec -- Period after which the rate counter resets for clients
 
 -- Helper functions
 
@@ -45,7 +43,7 @@ local function initPlayerTable(ply) -- Opening a table on the player to store as
 	if ply and not ply.PSI then
 		ply.PSI = {}
 		ply.PSI.Status = {invisible = isInvisible(ply), timing_out = ply:IsTimingOut()}
-		ply.PSI.Net = {ready = false, rate = 0}
+		ply.PSI.Net = {first_spawn_set = false, rate = 0}
 	end
 end
 
@@ -57,11 +55,12 @@ local function broadcastStatus(ply_source, new_statusfield, new_last_active, ply
 
 	new_statusfield = new_statusfield or StatusFlags.ACTIVE
 
-	net.Start("PlyStatusIcons_StatusUpdate")
+	net.Start(Net.NETWORK_STRING)
+		net.WriteUInt(Net.SERVER_MESSAGE_TYPES.STATUS_UPDATE, Net.SMT_LEN)
 		net.WriteEntity(ply_source)
-		net.WriteUInt(new_statusfield, PSI.Net.STATUS_LEN)
+		net.WriteUInt(new_statusfield, PSI.Net.STATUS_LEN_SV)
 		if flagGet(new_statusfield, StatusFlags.AFK) then
-			net.WriteFloat(new_last_active or 0)
+			net.WriteDouble(new_last_active or 0)
 		end
 
 	if ply_target and ply_target:IsPlayer() then
@@ -70,13 +69,21 @@ local function broadcastStatus(ply_source, new_statusfield, new_last_active, ply
 		net.SendOmit(ply_source)
 	end
 
+	-- A bit of support for server devs, you can use this to add a custom script to kick AFKs or whatever
+	hook.Run("PlyStatusIcons_Hook_StatusUpdate", ply_source, new_statusfield, new_last_active, ply_target)
+	-- ent ply_source: player where the status update came from
+	-- unsigned int new_statusfield: the new status... (also check out helper functions for handling this (init file))
+	-- float new_last_active: the last time there was input from the player (curtime) only used when afk, otherwise 0
+	-- ent ply_target: only a player entity if there is a specific player to send the update to, otherwise it is sent to everyone
+
 end
 
 local function requestStatusUpdate(ply) -- Requests a status update from ply. The status update is then forwarded to every other player
-	
+
 	if not isEnabled() then return end
 
-	net.Start("PlyStatusIcons_RequestStatusUpdate")
+	net.Start(Net.NETWORK_STRING)
+		net.WriteUInt(Net.SERVER_MESSAGE_TYPES.STATUS_UPDATE_REQUEST, Net.SMT_LEN)
 	net.Send(ply)
 
 end
@@ -130,21 +137,14 @@ local function NetRateReset() -- Call rate of this depends on network settings
 
 end
 
-net.Receive("PlyStatusIcons_StatusUpdate", function(len, ply_source) -- The client is only expected to send a status update when there is a CHANGE in the status or it is requested
-
-	-- Security measures
+local function receiveStatusUpdate(len, ply_source) -- The client is only expected to send a status update when there is a CHANGE in the status or it is requested
 
 	if not isEnabled() or not IsValid(ply_source) then return end
 
-	initPlayerTable(ply_source)
-	if ply_source.PSI.Net.rate >= PSI.Net.RATE_LIMIT then return end
-
-	ply_source.PSI.Net.rate = ply_source.PSI.Net.rate + 1 -- This resets after a given time window
-
 	-- Reading net
 
-	local new_statusfield = net.ReadUInt(PSI.Net.STATUS_LEN)
-	local new_last_active = flagGet(new_statusfield, StatusFlags.AFK) and net.ReadFloat() or 0
+	local new_statusfield = net.ReadUInt(Net.STATUS_LEN_CL)
+	local new_last_active = flagGet(new_statusfield, StatusFlags.AFK) and net.ReadDouble() or 0
 	local read_target = net.ReadBool()
 	local ply_target = read_target and net.ReadEntity() or NULL -- broadcastStatus will know if it's invalid
 
@@ -152,28 +152,38 @@ net.Receive("PlyStatusIcons_StatusUpdate", function(len, ply_source) -- The clie
 
 	broadcastStatus(ply_source, new_statusfield, new_last_active, ply_target)
 
-	-- A bit of support for server devs, you can use this to add a custom script to kick AFKs or whatever
-	hook.Run("PlyStatusIcons_Hook_StatusUpdate", ply_source, new_statusfield, new_last_active, ply_target) 
-	-- ent ply_source: player where the status update came from
-	-- unsigned int new_statusfield: the new status... (also check out helper functions for handling this (init file))
-	-- float new_last_active: the last time there was input from the player (curtime) only used when afk, otherwise 0
-	-- ent ply_target: only a player entity if there is a specific player to send the update to, otherwise it is sent to everyone
+end
 
-end)
-
-net.Receive("PlyStatusIcons_NetworkReady", function(len, ply_source) -- Forward that the newly spawned in player is ready
+local function receiveFirstSpawn(len, ply_source) -- Forward that the newly spawned in player is ready
 
 	if not isEnabled() or not IsValid(ply_source) then return end
 
 	initPlayerTable(ply_source)
-	if ply_source.PSI.Net.ready then return end -- This is a security measure to protect other players from getting flooded
-	ply_source.PSI.Net.ready = true
+	if ply_source.PSI.Net.first_spawn_set then return end -- This is a security measure to protect other players from getting flooded
+	ply_source.PSI.Net.first_spawn_set = true
 
 	-- Forwarding
-
-	net.Start("PlyStatusIcons_NetworkReady")
+	net.Start(Net.NETWORK_STRING)
+		net.WriteUInt(Net.SERVER_MESSAGE_TYPES.FIRST_SPAWN, Net.SMT_LEN)
 		net.WriteEntity(ply_source)
 	net.SendOmit(ply_source)
+
+end
+
+net.Receive(Net.NETWORK_STRING, function(len, ply_source)
+
+	-- Security measures
+	initPlayerTable(ply_source)
+	if ply_source.PSI.Net.rate >= PSI.Net.RATE_LIMIT then return end
+	ply_source.PSI.Net.rate = ply_source.PSI.Net.rate + 1 -- This resets after a given time window
+
+	local msg_type = net.ReadUInt(Net.CMT_LEN)
+
+	if msg_type == Net.CLIENT_MESSAGE_TYPES.FIRST_SPAWN then
+		receiveFirstSpawn(len, ply_source)
+	elseif msg_type == Net.CLIENT_MESSAGE_TYPES.STATUS_UPDATE then
+		receiveStatusUpdate(len, ply_source)
+	end
 
 end)
 
@@ -182,7 +192,7 @@ end)
 local currently_active -- A safeguard for double calling the toggle function
 
 local function toggleServerService(active) -- Toggles the detection and broadcasting of statusflags detected serverside (only serverside - status updates received from clients are independent)
-	
+
 	if currently_active == active then return end
 	currently_active = active
 
@@ -202,14 +212,14 @@ local function toggleServerService(active) -- Toggles the detection and broadcas
 			end
 
 		end)
-		
+
 		hook.Remove("PlayerInitialSpawn", "PlyStatusIcons_PlayerInitialSpawn")
 
 	else
 
 		timer.Remove("PlyStatusIcons_ServerSideStatusDetection")
 		timer.Remove("PlyStatusIcons_NetRateReset")
-		
+
 		hook.Add("PlayerInitialSpawn", "PlyStatusIcons_PlayerInitialSpawn", function() -- Player spawned in
 
 			if not isEnabled() then return end
@@ -231,7 +241,7 @@ end
 toggleServerService(false) -- Initialize server side
 
 cvars.AddChangeCallback(Convar.sv_enabled:GetName(), function(name, value_old, value_new)
-	
+
 	local enabled = tobool(value_new)
 	if tobool(value_old) == enabled then return end -- Pointless call
 

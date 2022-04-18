@@ -1,30 +1,3 @@
---[[
-
-	Player Status Icons by Haaax is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License.
-	Copyright (c) 2020 Haaax <http://steamcommunity.com/profiles/76561198073542810> (STEAM_0:0:56638541)
-	https://creativecommons.org/licenses/by-nc-nd/4.0/
-
-	Coding style info:
-
-	Function names:
-	Helper functions / methods: camelCase
-	Event functions (hooks, net, etc): PascalCase
-
-	Var names:
-	snake_case (camelCase if it gets too long)
-	
-	Constants:
-	UPPER_SNAKE_CASE
-
-	Tables:
-	PascalCase
-
-	Mark running environment in the top of the file
-
-	For everything else, follow lua style guidelines
-	
-]]--
-
 -- Shared environment (file automatically sent to clients)
 
 if game.SinglePlayer() then return end -- This addon is pointless in singleplayer
@@ -52,10 +25,9 @@ Enum.STATUSFLAG = 4
 Enum.PANEL = 5
 
 Convar.PREFIX = "psi_"
-
 Convar.__index = Convar
 
-function Convar:new(label, change_callback, ...) -- Constructor - Safely (no duplicate) creates a new convar, and stores some extra data with it
+function Convar.new(label, change_callback, ...) -- Constructor - Safely (no duplicate) creates a new convar, and stores some extra data with it
 	-- Not the prettiest thing, also probably bad for performance but I kinda wanted to try some OOP with LUA
 
 	local new_convar = {
@@ -86,7 +58,7 @@ function Convar:new(label, change_callback, ...) -- Constructor - Safely (no dup
 
 	local convar_meta = getmetatable(convar_handle)
 
-	new_convar[Enum.HANDLE_META].__index = function(self, key)
+	new_convar[Enum.HANDLE_META].__index = function(_, key)
 
 		local convar_func_ref = convar_meta[key]
 
@@ -107,12 +79,25 @@ function Convar:new(label, change_callback, ...) -- Constructor - Safely (no dup
 end
 
 -- Networking constants
-Net.STATUS_LEN = 7 -- bits
-Net.RATE_LIMIT = 20 -- Number of updates a client can send over a given time window
-Net.RATE_WINDOW = 1 -- sec -- Period after which the rate counter resets for clients
+
+Net.NETWORK_STRING = "PlyStatusIcons_Network"
+
+-- 0 values are ambiguous in that they can also be the result of a read error,
+-- I also considered this while picking IDs for message types
+Net.CLIENT_MESSAGE_TYPES = { -- Messages sent by clients
+	FIRST_SPAWN = 0, -- The client signals it is ready to receive data (this is used once, and then ignored by the server)
+	STATUS_UPDATE = 1 -- The client sends a status update
+}
+Net.CMT_LEN = 1 -- bits
+
+Net.SERVER_MESSAGE_TYPES = { -- Messages sent by the server
+	STATUS_UPDATE_REQUEST = 0, -- If there is a read error, there is no harm done in the client sending a status update
+	STATUS_UPDATE = 1, -- The server forwards a status update
+	FIRST_SPAWN = 2 -- The server forwards the first spawn signal
+}
+Net.SMT_LEN = 2 -- bits
 
 -- Status flags (enums), in hierarchical order
-
 PSI.StatusFlags = {
 	ACTIVE = 0,
 	AFK = 1,
@@ -123,6 +108,9 @@ PSI.StatusFlags = {
 	ALTTAB = 32, -- Game not in focus
 	TIMEOUT = 64 -- The player is timing out, detected server side
 }
+Net.STATUS_LEN_CL = 6 -- bits -- the TIMEOUT flag is only set by the server.
+Net.STATUS_LEN_SV = 7 -- bits
+
 
 -- Global helper functions
 
@@ -144,22 +132,21 @@ PSI.flagSet = function(field, flag, flag_active) -- A shorthand to make the code
 	end
 end
 
-PSI.flagGet = function(field, flag) -- Returns whether the given flag is active 
+PSI.flagGet = function(field, flag) -- Returns whether the given flag is active
 	return tobool(bit.band(field, flag))
 end
 
 -- Enabled
-Convar.sv_enabled = Convar:new("Server enabled", nil, "sv_enabled", "1", bit.bor(SERVER and FCVAR_ARCHIVE or 0, FCVAR_REPLICATED), "Toggles the addon globally") -- FCVAR_ARCHIVE must be serverside only as of now (game bug)
+Convar.sv_enabled = Convar.new("Server enabled", nil, "sv_enabled", "1", bit.bor(SERVER and FCVAR_ARCHIVE or 0, FCVAR_REPLICATED), "Toggles the addon globally") -- FCVAR_ARCHIVE must be serverside only as of now (game bug)
 
 -- AFK Timelimit
-Convar.afk_timelimit = Convar:new(nil, nil, "afk_timelimit", "3", bit.bor(SERVER and FCVAR_ARCHIVE or 0, FCVAR_REPLICATED), "Sets the timelimit for the timestamp to appear, and for afk flag activation (minutes)", 1)
+Convar.afk_timelimit = Convar.new(nil, nil, "afk_timelimit", "3", bit.bor(SERVER and FCVAR_ARCHIVE or 0, FCVAR_REPLICATED), "Sets the timelimit for the timestamp to appear, and for afk flag activation (minutes)", 1)
 
 -- Loading script
-
 if SERVER then
-	
+
 	AddCSLuaFile("psi/client/cl_main.lua")
-	
+
 	AddCSLuaFile("psi/client/scripts/ui.lua")
 	AddCSLuaFile("psi/client/scripts/status_detection.lua")
 	AddCSLuaFile("psi/client/scripts/status_visualization.lua")

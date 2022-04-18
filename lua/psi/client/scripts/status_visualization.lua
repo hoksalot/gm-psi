@@ -23,9 +23,31 @@ local Statuses = PSI.Statuses
 local render_scale = 0.05
 
 local icon_size = 115
+local icon_real_size = icon_size * render_scale
+
+local icon_max_alpha = 200
+-- Colors used for rendering icon and text
+-- Alpha value changes dynamically
+local fade_white = Color(255, 255, 255)
+local fade_black = Color(0, 0, 0)
+
+-- How much of the view does the icon have to take up to appear fully visible
+local fading_ratio_max = 1.1 / 100
+-- The ratio at which the icon starts appearing
+local fading_ratio_min = fading_ratio_max * 0.7
 
 local timestamp_offset = 95
-local timestamp_font = surface.CreateFont("PSI_Timestamp", {font = "Coolvetica", size = 75, antialiasing = true, weight = 100})
+local timestamp_font = "PSI_Timestamp"
+
+surface.CreateFont(
+	timestamp_font,
+	{
+		font = "Coolvetica",
+		size = 75,
+		antialiasing = true,
+		weight = 100
+	}
+)
 
 -- Helper functions
 
@@ -36,7 +58,7 @@ local function mostSignificantFlag(x) -- (previousPowerOf2) Works until up to 2^
     x = bit.bor(x, bit.rshift(x, 4))
     x = bit.bor(x, bit.rshift(x, 8))
     x = bit.bor(x, bit.rshift(x, 16))
-    
+
     return x - bit.rshift(x, 1)
 
 end
@@ -54,9 +76,9 @@ end
 local function timeFormat(seconds) -- Returns nicely formatted time string for displaying
 
 	if seconds < 60 then
-		return string.format("%02d sec", seconds)	
+		return string.format("%02d sec", seconds)
 	elseif seconds < 3600 then
-		return string.format("%d min", seconds / 60)	
+		return string.format("%d min", seconds / 60)
 	else
 		local time = string.FormattedTime(seconds)
 		return string.format("%dh %02dm", time.h, time.m)
@@ -65,16 +87,16 @@ local function timeFormat(seconds) -- Returns nicely formatted time string for d
 end
 
 -- Receiving updates
-
-net.Receive("PlyStatusIcons_StatusUpdate", function() -- Receiving status update
+local function receiveStatusUpdate() -- Receiving status update
 
 	-- Even if the script is disabled the client has to keep up with updates (to not break re-enabling)
 
 	local ply_source = net.ReadEntity()
-	local new_statusfield = net.ReadUInt(PSI.Net.STATUS_LEN)
-	local new_last_active = flagGet(new_statusfield, StatusFlags.AFK) and net.ReadFloat()
+	local new_statusfield = net.ReadUInt(PSI.Net.STATUS_LEN_SV)
+	local new_last_active = flagGet(new_statusfield, StatusFlags.AFK) and net.ReadDouble()
 
 	if not ply_source:IsPlayer() then return end -- Read fail
+	if new_last_active and new_last_active == 0 then return end
 
 	if new_statusfield == StatusFlags.ACTIVE then -- Pointless to store this, also less entries to loop through when rendering
 		Statuses[ply_source] = nil
@@ -103,7 +125,7 @@ net.Receive("PlyStatusIcons_StatusUpdate", function() -- Receiving status update
 
 	Statuses[ply_source].statusfield = new_statusfield
 
-end)
+end
 
 -- Rendering stuff
 
@@ -111,10 +133,15 @@ local function Render(bdepth, bskybox)
 
 	if bskybox then return end -- Current call is drawing skybox, not good for us
 
+	-- https://developer.valvesoftware.com/wiki/Field_of_View
+	local object_scale = 1 / (2 * (math.tan(math.rad(LocalPlayer():GetFOV() / 2))))
+
+	local height_offset = Convar.height_offset[Enum.HANDLE]:GetFloat()
+
 	for ply, statusinfo in pairs(Statuses) do
 
 		-- Disconnect hook is not reliable
-		if not IsValid(ply) then 
+		if not IsValid(ply) then
 			Statuses[ply] = nil
 			goto next
 		end
@@ -128,34 +155,31 @@ local function Render(bdepth, bskybox)
 		local attachment_id = ply:LookupAttachment("anim_attachment_head") or 0 -- Can't take any chances with nils here
 		local attachment = ply:GetAttachment(attachment_id)
 
-		local base_pos = Vector()
-
+		local base_pos
 		if attachment and attachment.Pos then -- Would've been too ugly with a ternary
 			base_pos = attachment.Pos
 		else
 			base_pos = (ply:LocalToWorld(ply:OBBCenter()) + ply:GetUp() * 24)
 		end
 
-		local render_pos = base_pos + ply:GetUp() * Convar.height_offset[Enum.HANDLE]:GetFloat()
+		local render_pos = base_pos + ply:GetUp() * height_offset
 
-		-- Distance fading
-		local render_mindist = Convar.render_distance[Enum.HANDLE]:GetFloat()
-		local render_maxdist = render_mindist + 80
-
-		local dist = (render_pos-EyePos()):Length()
-		local dist_clamped = math.Clamp(dist, render_mindist, render_maxdist)
-		local dist_alpha = math.Remap(dist_clamped, render_mindist, render_maxdist, 200, 0)
+		-- Fading
+		local dist = render_pos:Distance(EyePos())
+		local icon_view_ratio = object_scale * icon_real_size / dist
+		local icon_view_ratio_clamped = math.Clamp(icon_view_ratio, fading_ratio_min, fading_ratio_max)
+		local dist_alpha = math.Remap(icon_view_ratio_clamped, fading_ratio_min, fading_ratio_max, 0, icon_max_alpha)
 
 		if dist_alpha == 0 then goto next end -- Nothing to render
 
 		-- Colors
-		local fade_white = Color(255, 255, 255, dist_alpha)
-		local fade_black = Color(0, 0, 0, dist_alpha)
+		fade_white.a = dist_alpha
+		fade_black.a = dist_alpha
 
 		-- Render ang
 		local render_ang = EyeAngles()
-		render_ang:RotateAroundAxis(render_ang:Right(),90)
-		render_ang:RotateAroundAxis(-render_ang:Up(),90)
+		render_ang:RotateAroundAxis(render_ang:Right(), 90)
+		render_ang:RotateAroundAxis(-render_ang:Up(), 90)
 
 		cam.Start3D2D(render_pos, render_ang, render_scale)
 
@@ -172,10 +196,10 @@ local function Render(bdepth, bskybox)
 			-- Timestamp
 
 			local last_active = statusinfo.last_active
-			
+
 			if last_active then
-				local afk_seconds = CurTime() - last_active
-				draw.SimpleTextOutlined(timeFormat(afk_seconds), "PSI_Timestamp", 0, timestamp_offset, fade_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, fade_black)
+				local afk_seconds = os.time() - last_active
+				draw.SimpleTextOutlined(timeFormat(afk_seconds), timestamp_font, 0, timestamp_offset, fade_white, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 1, fade_black)
 			end
 
 		cam.End3D2D()
@@ -191,7 +215,7 @@ local currently_active -- A safeguard for double calling the toggle function (bi
 local function ToggleHandle(active)
 
 	active = active and Convar.sv_enabled:GetBool() and Convar.cl_enabled:GetBool()
-	
+
 	if currently_active == active then return end
 	currently_active = active
 
@@ -204,4 +228,4 @@ local function ToggleHandle(active)
 
 end
 
-return ToggleHandle
+return ToggleHandle, receiveStatusUpdate

@@ -2,9 +2,9 @@
 # Player Status Icons
 
 [![GLua Linter](https://github.com/hoksalot/gm-psi/actions/workflows/glualint.yml/badge.svg)](https://github.com/hoksalot/gm-psi/actions/workflows/glualint.yml)
-![Steam Views](https://img.shields.io/steam/views/2002082140?logo=steam)
-![Steam Subscribers](https://img.shields.io/endpoint.svg?url=https://shieldsio-steam-workshop.jross.me/2002082140/subscriptions&label=subscriptions)
-![Steam Update Date](https://img.shields.io/steam/update-date/2002082140?label=update%20date&logo=steam)
+[![Steam Views](https://img.shields.io/steam/views/2002082140?logo=steam)](https://steamcommunity.com/sharedfiles/filedetails/?id=2002082140)
+[![Steam Subscribers](https://img.shields.io/endpoint.svg?url=https://shieldsio-steam-workshop.jross.me/2002082140/subscriptions&label=subscriptions)](https://steamcommunity.com/sharedfiles/filedetails/?id=2002082140)
+[![Steam Update Date](https://img.shields.io/steam/update-date/2002082140?label=update%20date&logo=steam)](https://steamcommunity.com/sharedfiles/filedetails/?id=2002082140)
 
 ## Welcome
 
@@ -37,7 +37,7 @@ Statuses are sent from the client in the form of a [bit field](https://en.wikipe
 | ALTTAB       | 32                      | Game not in focus                            |
 | TIMEOUT      | 64                      | Detected server side, player lost connection |
 
-Status detection on the client is polling-based, (every 40ms, though I'm planning to optimize this) but the client only sends an update to the server if there really is a change in its status. The server then distributes this information to the other clients. There is a maximum number of updates a player can send in a given time window.
+Status detection on the client is polling-based, (every 80ms, 1 sec when AFK) but the client only sends an update to the server if there really is a change in its status. The server then distributes this information to the other clients. There is a maximum number of updates a player can send in a given time window.
 
 ### Coding style info
 

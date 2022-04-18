@@ -8,34 +8,32 @@ local Enum = Convar.Enums
 
 local IconMaterials = PSI.IconMaterials
 
-local flagSet = PSI.flagSet
-
 local function checkBoxIconLabel(dform, icon_material, label, convar) -- DForm is the container
-		
+
 	local checkbox = dform:CheckBox(label, convar)
-	
+
 	local icon = vgui.Create("DImage", checkbox)
 	icon:SetSize(15, 15)
 	icon:SetMaterial(icon_material)
-	checkbox.Icon = icon	
-	
+	checkbox.Icon = icon
+
 	function checkbox:PerformLayout() -- Modified source code of DCheckBoxLabel
 
 		local x = self.m_iIndent or 0
-		
+
 		self.Button:SetSize(15, 15)
 		self.Button:SetPos(x, math.floor((self:GetTall() - self.Button:GetTall()) / 2))
 
 		self.Icon:SetSize(15, 15)
 		self.Icon:SetPos(x + self.Button:GetWide() + 9, math.floor((self:GetTall() - self.Icon:GetTall()) / 2))
-	
+
 		self.Label:SizeToContents()
 		self.Label:SetPos(x + self.Button:GetWide() + 9 + self.Icon:GetWide() + 9, 0)
-	
+
 	end
 
 	return checkbox
-			
+
 end
 
 local function MakeSettingsMenu(panel)
@@ -63,7 +61,6 @@ local function MakeSettingsMenu(panel)
 			checkbox:SetEnabled(active)
 		end
 
-		Convar.render_distance[Enum.PANEL]:SetEnabled(active)
 		Convar.height_offset[Enum.PANEL]:SetEnabled(active)
 
 	end
@@ -94,14 +91,14 @@ local function MakeSettingsMenu(panel)
 		new_checkbox.Convar = convar
 
 		convar[Enum.PANEL] = new_checkbox
-		
+
 		new_checkbox.Button.Toggle = function(self) -- Make sure it can't be unchecked if it's the last checkbox
-			
+
 			local others_active = false -- Will store if there are any other checkboxes active
 
-			for _, convar in ipairs(Convar.IconSettings) do
+			for _, cvar in ipairs(Convar.IconSettings) do
 
-				local checkbox = convar[Enum.PANEL]
+				local checkbox = cvar[Enum.PANEL]
 
 				if checkbox ~= self:GetParent() and checkbox:GetChecked() then
 					others_active = true
@@ -109,20 +106,14 @@ local function MakeSettingsMenu(panel)
 				end
 
 			end
-			
+
 			if self:GetChecked() and not others_active then return end -- Then we don't change the value
-			
+
 			self:SetValue(not self:GetChecked()) -- Switch the checkbox
 
 		end
 
 	end
-
-	-- Render distance
-
-	local slider_render_distance = panel:NumSlider(Convar.render_distance[Enum.LABEL], Convar.render_distance:GetName(), Convar.render_distance:GetMin(), Convar.render_distance:GetMax(), 0)
-	slider_render_distance:SetTooltip(Convar.render_distance:GetHelpText())
-	Convar.render_distance[Enum.PANEL] = slider_render_distance
 
 	-- Height offset
 
