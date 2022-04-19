@@ -18,7 +18,7 @@ If you're looking to interface with this addon, I have added a server-side hook:
 `PlyStatusIcons_Hook_StatusUpdate(ply_source, new_statusfield, new_last_active, ply_target):`<br/>
 `ent ply_source:` Player where the status update came from<br/>
 `unsigned int new_statusfield:` The new status... (also check out helper functions for handling this (init file))<br/>
-`float new_last_active:` The last time there was input from the player (curtime). Only used when afk, otherwise 0<br/>
+`float new_last_active:` The last time there was input from the player (unix time). Only used when afk, otherwise 0<br/>
 `ent ply_target:` Only a player entity if there is a specific player to send the update to, otherwise it is `nil`, and the update is sent to everyone<br/>
 
 You can use this by calling `hook.Add(...)` (See [Garry's Mod wiki](https://wiki.facepunch.com/gmod/hook.Add))<br/>
