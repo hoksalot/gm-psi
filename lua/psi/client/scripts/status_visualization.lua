@@ -32,9 +32,9 @@ local fade_white = Color(255, 255, 255)
 local fade_black = Color(0, 0, 0)
 
 -- How much of the view does the icon have to take up to appear fully visible
-local fading_ratio_max = 1.1 / 100
+local fading_ratio_max = 0.35e-2
 -- The ratio at which the icon starts appearing
-local fading_ratio_min = fading_ratio_max * 0.7
+local fading_ratio_min = fading_ratio_max * 0.8
 
 local timestamp_offset = 95
 local timestamp_font = "PSI_Timestamp"
@@ -135,6 +135,7 @@ local function Render(bdepth, bskybox)
 
 	-- https://developer.valvesoftware.com/wiki/Field_of_View
 	local object_scale = 1 / (2 * (math.tan(math.rad(LocalPlayer():GetFOV() / 2))))
+	local icon_real_size_scaled = object_scale * icon_real_size
 
 	local height_offset = Convar.height_offset[Enum.HANDLE]:GetFloat()
 
@@ -166,7 +167,7 @@ local function Render(bdepth, bskybox)
 
 		-- Fading
 		local dist = render_pos:Distance(EyePos())
-		local icon_view_ratio = object_scale * icon_real_size / dist
+		local icon_view_ratio = icon_real_size_scaled / dist
 		local icon_view_ratio_clamped = math.Clamp(icon_view_ratio, fading_ratio_min, fading_ratio_max)
 		local dist_alpha = math.Remap(icon_view_ratio_clamped, fading_ratio_min, fading_ratio_max, 0, icon_max_alpha)
 
