@@ -32,9 +32,9 @@ local fade_white = Color(255, 255, 255)
 local fade_black = Color(0, 0, 0)
 
 -- How much of the view does the icon have to take up to appear fully visible
-local fading_ratio_max = 1.1 / 100
+local fading_ratio_max = 0.35e-2
 -- The ratio at which the icon starts appearing
-local fading_ratio_min = fading_ratio_max * 0.7
+local fading_ratio_min = fading_ratio_max * 0.8
 
 local timestamp_offset = 95
 local timestamp_font = "PSI_Timestamp"
