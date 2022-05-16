@@ -135,6 +135,7 @@ local function Render(bdepth, bskybox)
 
 	-- https://developer.valvesoftware.com/wiki/Field_of_View
 	local object_scale = 1 / (2 * (math.tan(math.rad(LocalPlayer():GetFOV() / 2))))
+	local icon_real_size_scaled = object_scale * icon_real_size
 
 	local height_offset = Convar.height_offset[Enum.HANDLE]:GetFloat()
 
@@ -166,7 +167,7 @@ local function Render(bdepth, bskybox)
 
 		-- Fading
 		local dist = render_pos:Distance(EyePos())
-		local icon_view_ratio = object_scale * icon_real_size / dist
+		local icon_view_ratio = icon_real_size_scaled / dist
 		local icon_view_ratio_clamped = math.Clamp(icon_view_ratio, fading_ratio_min, fading_ratio_max)
 		local dist_alpha = math.Remap(icon_view_ratio_clamped, fading_ratio_min, fading_ratio_max, 0, icon_max_alpha)
 
